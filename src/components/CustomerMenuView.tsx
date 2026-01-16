@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Product, CartItem, ShopSettings, Category, AddonGroup, AddonOption, PendingOrder } from '../types';
 import { ShoppingBasket, Search, X, Plus, Minus, CheckCircle, ArrowRight, LayoutGrid, ChevronRight, User, MessageSquare, History, Ticket, MapPin, Info, ArrowLeft, Trash2, Image as ImageIcon, QrCode, PlayCircle, ChevronLeft, ShoppingBag, Star, MessageCircle, UtensilsCrossed, Sparkles } from 'lucide-react';
@@ -213,15 +214,21 @@ const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ products, settings,
                 <div className="relative w-full max-w-4xl flex flex-col items-center text-center animate-in zoom-in-95 duration-700">
                     <div className={`w-32 h-32 md:w-48 md:h-48 rounded-[40px] md:rounded-[60px] bg-${themeColor}-600 flex items-center justify-center text-white shadow-2xl mb-8 md:mb-12 relative overflow-hidden group`}>
                         <div className="absolute inset-0 bg-white/10 group-hover:translate-x-full transition-transform duration-1000 skew-x-12" />
-                        <UtensilsCrossed className="w-16 h-16 md:w-24 md:h-24" />
+                        {settings.loginScreen.customLogo ? (
+                            <img src={settings.loginScreen.customLogo} className="w-full h-full object-contain p-4" />
+                        ) : (
+                            <UtensilsCrossed className="w-16 h-16 md:w-24 md:h-24" />
+                        )}
                     </div>
                     
                     <h1 className={`text-4xl md:text-8xl font-black ${textColor} mb-4 tracking-tighter leading-none`}>
-                        {settings.shopName}
+                        {settings.kiosk.welcomeMessage || settings.shopName}
                     </h1>
-                    <p className={`text-lg md:text-3xl font-bold ${mutedText} mb-12 md:mb-20 max-w-2xl`}>
-                        Premium flavors crafted for you. Tap to explore our menu.
-                    </p>
+                    {settings.kiosk.showTagline && (
+                        <p className={`text-lg md:text-3xl font-bold ${mutedText} mb-12 md:mb-20 max-w-2xl`}>
+                            {settings.kiosk.tagline}
+                        </p>
+                    )}
 
                     <button 
                         onClick={() => setIsStarted(true)}
