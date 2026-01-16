@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
-import { Transaction, ShopSettings } from '../types';
+import { Transaction, ShopSettings, Member } from '../types';
 // Add missing 'Receipt' import from lucide-react
 import { Search, Clock, Printer, Download, Mail, Loader2, Send, X, CloudUpload, CheckCircle, FileSpreadsheet, AlertCircle, BarChart3, List, Receipt } from 'lucide-react';
 import { printReceipt, generateReceiptEmailHtml } from '../services/printerService';
@@ -16,9 +16,10 @@ declare global {
 interface TransactionsListProps {
   transactions: Transaction[];
   settings: ShopSettings;
+  members: Member[];
 }
 
-const TransactionsList: React.FC<TransactionsListProps> = ({ transactions, settings }) => {
+const TransactionsList: React.FC<TransactionsListProps> = ({ transactions, settings, members }) => {
   const [activeTab, setActiveTab] = useState<'history' | 'insights'>('history');
   const [filter, setFilter] = useState('');
   const [emailTarget, setEmailTarget] = useState<Transaction | null>(null);
@@ -146,7 +147,10 @@ const TransactionsList: React.FC<TransactionsListProps> = ({ transactions, setti
                           <td className="px-6 py-4"><div className={`text-sm font-bold ${textColor}`}>{tx.orderNumber}</div><div className={`text-[10px] ${mutedText}`}>{new Date(tx.timestamp).toLocaleString()}</div></td>
                           <td className="px-6 py-4"><div className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'} line-clamp-1`}>{tx.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</div></td>
                           <td className="px-6 py-4 text-right font-bold ${textColor}">{tx.currency}{sp}{tx.total.toFixed(2)}</td>
-                          <td className="px-6 py-4"><div className="flex justify-end gap-2"><button onClick={() => { setEmailAddress(tx.memberId ? settings.members?.find(m => m.id === tx.memberId)?.email || '' : ''); setEmailTarget(tx); }} className={`p-2 rounded-lg ${mutedText} hover:text-blue-600 transition-colors`} title="Email Receipt"><Mail className="w-4 h-4" /></button><button onClick={() => printReceipt(tx, settings)} className={`p-2 rounded-lg ${mutedText} hover:text-${themeColor}-600 transition-colors`} title="Print Receipt"><Printer className="w-4 h-4" /></button></div></td>
+                          <td className="px-6 py-4">
+                            {/* Fixed lookup by using members prop instead of settings.members */}
+                            <div className="flex justify-end gap-2"><button onClick={() => { setEmailAddress(tx.memberId ? members?.find(m => m.id === tx.memberId)?.email || '' : ''); setEmailTarget(tx); }} className={`p-2 rounded-lg ${mutedText} hover:text-blue-600 transition-colors`} title="Email Receipt"><Mail className="w-4 h-4" /></button><button onClick={() => printReceipt(tx, settings)} className={`p-2 rounded-lg ${mutedText} hover:text-${themeColor}-600 transition-colors`} title="Print Receipt"><Printer className="w-4 h-4" /></button></div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
