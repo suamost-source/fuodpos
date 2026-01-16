@@ -23,10 +23,11 @@ interface CustomerMenuViewProps {
     settings: ShopSettings;
     onSubmitOrder: (order: PendingOrder) => void;
     onBack?: () => void;
+    autoStart?: boolean; // New: Bypass landing screen for admin preview
 }
 
-const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ products, settings, onSubmitOrder, onBack }) => {
-    const [isStarted, setIsStarted] = useState(false);
+const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ products, settings, onSubmitOrder, onBack, autoStart = false }) => {
+    const [isStarted, setIsStarted] = useState(autoStart);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -65,7 +66,10 @@ const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ products, settings,
         if (table) setTableNumber(table);
         const stored = localStorage.getItem('kiosk_tickets');
         if (stored) { try { setSavedTickets(JSON.parse(stored)); } catch (e) {} }
-    }, []);
+        
+        // Handle autoStart if prop changes
+        if (autoStart) setIsStarted(true);
+    }, [autoStart]);
 
     useEffect(() => {
         if (selectedProduct) {
@@ -97,7 +101,8 @@ const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ products, settings,
     };
 
     const parentCategories = useMemo(() => {
-        const all = { id: 'all', name: 'All' };
+        // Explicitly type 'all' to Category to include optional properties like image
+        const all: Category = { id: 'all', name: 'All', showInPos: true, showInKiosk: true };
         const shopCats = (settings.categories || []).filter(c => !c.parentId && c.showInKiosk !== false);
         return [all, ...shopCats];
     }, [settings.categories]);
@@ -112,23 +117,25 @@ const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ products, settings,
         return settings.categories?.filter(c => c.parentId === parentId && c.showInKiosk !== false) || [];
     }, [settings.categories, selectedCategoryId]);
 
-    const filteredProducts = products.filter(p => {
+    const filteredProducts = useMemo(() => products.filter(p => {
         const isManuallyAvailable = p.isAvailable ?? true;
         let matchesCat = true;
         if (selectedCategoryId !== 'all') {
             const targetCat = settings.categories?.find(c => c.id === selectedCategoryId);
             if (targetCat) {
+                // Products store the NAME of the category, so we compare names
                 const childIds = settings.categories?.filter(c => c.parentId === targetCat.id).map(c => c.name) || [];
                 const categoryNames = [targetCat.name, ...childIds];
                 matchesCat = categoryNames.includes(p.category);
             } else {
+                // Fallback attempt to match by category name directly if ID lookup fails
                 matchesCat = p.category === selectedCategoryId;
             }
         }
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
         const respectInventoryVisibility = !settings.hideOutOfStock || (p.trackInventory ? (p.stock || 0) > 0 : true);
         return matchesCat && matchesSearch && respectInventoryVisibility && isManuallyAvailable;
-    });
+    }), [products, selectedCategoryId, settings.categories, settings.hideOutOfStock, searchQuery]);
 
     const featuredProducts = useMemo(() => products.filter(p => p.isChefSpecial && (p.isAvailable !== false)).slice(0, 8), [products]);
 
@@ -734,6 +741,7 @@ const CustomerMenuView: React.FC<CustomerMenuViewProps> = ({ products, settings,
                 </div>
             )}
 
+            {/* SCANNER OVERLAY */}
             {showScanner && (
                 <div className="fixed inset-0 z-[300] bg-black/98 flex flex-col items-center justify-center p-6 backdrop-blur-3xl">
                     <button onClick={stopScanner} className="absolute top-10 right-10 p-6 bg-white/10 rounded-full text-white"><X className="w-8 h-8" /></button>
