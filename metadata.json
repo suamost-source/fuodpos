@@ -1,0 +1,7 @@
+{
+  "name": "FuodPOS",
+  "description": "A robust, offline-first Point of Sale application featuring local data persistence, sales analytics, and AI-powered insights.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
