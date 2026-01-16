@@ -123,7 +123,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
 
   useEffect(() => {
     if (isQrModalOpen && qrCanvasRef.current) {
-        const baseUrl = window.location.origin + window.location.pathname;
+        // Clean URL building for Netlify
+        let baseUrl = window.location.origin + window.location.pathname;
+        // Strip trailing slash if present
+        if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+        
         let kioskUrl = `${baseUrl}?mode=kiosk`;
         if (qrTableNumber) kioskUrl += `&table=${encodeURIComponent(qrTableNumber)}`;
         
@@ -671,7 +675,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
                                               className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border-2 border-white shadow-sm"
                                               onClick={() => { setUploadingForCategoryId(cat.id); categoryImageInputRef.current?.click(); }}
                                           >
-                                              {cat.image ? <img src={cat.image} className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-gray-400" />}
+                                              {cat.image ? <img src={cat.image} className="w-full h-full object-cover" /> : <ImageIcon className="text-gray-400 w-5 h-5" />}
                                           </div>
                                           <div className="flex-1 min-w-0">
                                               <div className="flex items-center gap-2">
@@ -925,11 +929,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
                       <div className="md:col-span-2 space-y-4">
                         <div>
                           <label className={`block text-xs font-black uppercase tracking-widest ${mutedText} mb-2`}>{t('headerMessage')}</label>
-                          <textarea className={`w-full p-3 border ${inputBorder} rounded-xl ${inputBackground} ${textColor} text-sm resize-none h-20 outline-none`} value={formData.receipt.headerText} onChange={(e) => setFormData({...formData, kiosk: {...formData.kiosk, headerText: e.target.value}})} placeholder="Optional text at the top of receipts" />
+                          {/* Corrected headerText update logic */}
+                          <textarea className={`w-full p-3 border ${inputBorder} rounded-xl ${inputBackground} ${textColor} text-sm resize-none h-20 outline-none`} value={formData.receipt.headerText} onChange={(e) => setFormData({...formData, receipt: {...formData.receipt, headerText: e.target.value}})} placeholder="Optional text at the top of receipts" />
                         </div>
                         <div>
                           <label className={`block text-xs font-black uppercase tracking-widest ${mutedText} mb-2`}>{t('footerMessage')}</label>
-                          <textarea className={`w-full p-3 border ${inputBorder} rounded-xl ${inputBackground} ${textColor} text-sm resize-none h-20 outline-none`} value={formData.receipt.footerText} onChange={(e) => setFormData({...formData, kiosk: {...formData.kiosk, footerText: e.target.value}})} placeholder="E.g. No refunds after 7 days" />
+                          {/* Corrected footerText update logic */}
+                          <textarea className={`w-full p-3 border ${inputBorder} rounded-xl ${inputBackground} ${textColor} text-sm resize-none h-20 outline-none`} value={formData.receipt.footerText} onChange={(e) => setFormData({...formData, receipt: {...formData.receipt, footerText: e.target.value}})} placeholder="E.g. No refunds after 7 days" />
                         </div>
                       </div>
                   </SettingsSection>
