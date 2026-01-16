@@ -731,26 +731,46 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
                           <button 
                               type="button"
                               onClick={addCategory}
-                              className={`w-full py-3 border-2 border-dashed ${borderColor} rounded-2xl ${mutedText} font-bold text-sm hover:bg-gray-50 hover:border-${themeColor}-300 hover:text-${themeColor}-600 transition-all flex items-center justify-center gap-2`}
+                              className={`w-full py-3 border-2 border-dashed ${borderColor} rounded-2xl ${mutedText} font-bold text-sm hover:bg-gray-50 border-gray-100 hover:border-${themeColor}-300 hover:text-${themeColor}-600 transition-all flex items-center justify-center gap-2`}
                           >
                               <Plus className="w-4 h-4" /> Add Custom Category
                           </button>
                       </div>
                   </SettingsSection>
 
-                  <SettingsSection title="Digital Menu & Kiosk" icon={Tablet} styles={styleConfig}>
-                      <div className="md:col-span-2 space-y-4">
-                          <p className={`text-sm ${mutedText}`}>
-                              Generate QR codes for your physical tables. When scanned, these will open the Digital Menu with the table identifier pre-filled.
-                          </p>
-                          <button 
-                              type="button" 
-                              onClick={() => setIsQrModalOpen(true)}
-                              className={`flex items-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 active:scale-95 transition-all`}
-                          >
-                              <QrCode className="w-5 h-5" />
-                              Generate Table QR Code
-                          </button>
+                  <SettingsSection title="Digital Kiosk & QR Codes" icon={Tablet} styles={styleConfig}>
+                      <div className="md:col-span-2 space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <SettingsInput 
+                                label="Kiosk Welcome Message" 
+                                value={formData.kiosk.welcomeMessage} 
+                                onChange={(e: any) => setFormData({...formData, kiosk: {...formData.kiosk, welcomeMessage: e.target.value}})} 
+                                styles={styleConfig} 
+                                placeholder="Welcome to Our Store"
+                              />
+                              <SettingsInput 
+                                label="Kiosk Sub-Tagline" 
+                                value={formData.kiosk.tagline} 
+                                onChange={(e: any) => setFormData({...formData, kiosk: {...formData.kiosk, tagline: e.target.value}})} 
+                                styles={styleConfig} 
+                                placeholder="Fresh flavors daily..."
+                              />
+                          </div>
+                          <div className="flex items-center gap-3">
+                              <input type="checkbox" className={`w-5 h-5 rounded text-${themeColor}-600`} checked={formData.kiosk.showTagline} onChange={(e) => setFormData({...formData, kiosk: {...formData.kiosk, showTagline: e.target.checked}})} />
+                              <label className={`text-sm font-bold ${textColor}`}>Show Tagline on Landing Screen</label>
+                          </div>
+                          <div className="pt-4 border-t border-gray-100">
+                             <p className={`text-xs font-bold ${mutedText} mb-3 uppercase tracking-widest`}>Table Identification</p>
+                             <button 
+                                type="button" 
+                                onClick={() => setIsQrModalOpen(true)}
+                                className={`flex items-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 active:scale-95 transition-all`}
+                             >
+                                <QrCode className="w-5 h-5" />
+                                Generate Table QR Code
+                             </button>
+                          </div>
                       </div>
                   </SettingsSection>
               </div>
@@ -905,11 +925,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
                       <div className="md:col-span-2 space-y-4">
                         <div>
                           <label className={`block text-xs font-black uppercase tracking-widest ${mutedText} mb-2`}>{t('headerMessage')}</label>
-                          <textarea className={`w-full p-3 border ${inputBorder} rounded-xl ${inputBackground} ${textColor} text-sm resize-none h-20 outline-none`} value={formData.receipt.headerText} onChange={(e) => setFormData({...formData, receipt: {...formData.receipt, headerText: e.target.value}})} placeholder="Optional text at the top of receipts" />
+                          <textarea className={`w-full p-3 border ${inputBorder} rounded-xl ${inputBackground} ${textColor} text-sm resize-none h-20 outline-none`} value={formData.receipt.headerText} onChange={(e) => setFormData({...formData, kiosk: {...formData.kiosk, headerText: e.target.value}})} placeholder="Optional text at the top of receipts" />
                         </div>
                         <div>
                           <label className={`block text-xs font-black uppercase tracking-widest ${mutedText} mb-2`}>{t('footerMessage')}</label>
-                          <textarea className={`w-full p-3 border ${inputBorder} rounded-xl ${inputBackground} ${textColor} text-sm resize-none h-20 outline-none`} value={formData.receipt.footerText} onChange={(e) => setFormData({...formData, receipt: {...formData.receipt, footerText: e.target.value}})} placeholder="E.g. No refunds after 7 days" />
+                          <textarea className={`w-full p-3 border ${inputBorder} rounded-xl ${inputBackground} ${textColor} text-sm resize-none h-20 outline-none`} value={formData.receipt.footerText} onChange={(e) => setFormData({...formData, kiosk: {...formData.kiosk, footerText: e.target.value}})} placeholder="E.g. No refunds after 7 days" />
                         </div>
                       </div>
                   </SettingsSection>
