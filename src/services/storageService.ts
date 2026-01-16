@@ -59,6 +59,11 @@ const DEFAULT_SETTINGS: ShopSettings = {
       welcomeMessage: 'Please sign in to continue',
       showStoreName: true
   },
+  kiosk: {
+      welcomeMessage: 'Welcome to Our Store',
+      tagline: 'Premium flavors crafted for you. Tap to explore our menu.',
+      showTagline: true
+  },
   receipt: {
       showLogo: false,
       showShopName: true,
