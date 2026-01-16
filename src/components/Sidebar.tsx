@@ -100,7 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isMobileOpen, s
         <nav className="flex-1 py-2 space-y-1">
           <NavItem view="pos" icon={ShoppingCart} label={t('pos')} />
           <NavItem view="kitchen" icon={ChefHat} label="Kitchen Prep" />
-          <NavItem view="menu" icon={Tablet} label="Kiosk Menu" />
+          <NavItem view="menu" icon={Tablet} label="Digital Kiosk" />
           <NavItem view="transactions" icon={Receipt} label="History & Insights" />
           <NavItem view="members" icon={UsersIcon} label={t('customers')} />
           {(currentUser.role === 'admin' || currentUser.role === 'manager') && (
