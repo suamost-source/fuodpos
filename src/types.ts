@@ -200,6 +200,12 @@ export interface LoginScreenConfig {
     showStoreName: boolean;
 }
 
+export interface KioskConfig {
+    welcomeMessage: string;
+    tagline: string;
+    showTagline: boolean;
+}
+
 export interface ReceiptConfig {
     logo?: string; // Base64
     showLogo: boolean;
@@ -283,6 +289,9 @@ export interface ShopSettings {
   
   // New Login Config
   loginScreen: LoginScreenConfig;
+
+  // New Kiosk Config
+  kiosk: KioskConfig;
 
   // New Receipt Config
   receipt: ReceiptConfig;
