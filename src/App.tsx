@@ -240,6 +240,7 @@ const App: React.FC = () => {
                   settings={settings} 
                   onSubmitOrder={handleMenuOrderSubmit}
                   onBack={() => setCurrentView('pos')}
+                  autoStart={true} // Inside POS view, we start directly at the menu
               />
           )}
 
@@ -284,6 +285,7 @@ const App: React.FC = () => {
               <TransactionsList 
                   transactions={transactions} 
                   settings={settings} 
+                  members={members}
               />
           )}
 
