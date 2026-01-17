@@ -127,8 +127,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
     if (isQrModalOpen && qrCanvasRef.current) {
         let baseUrl = window.location.origin + window.location.pathname;
         if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+        
+        // Add pid (Project ID) to the URL so the phone knows where to sync from
         let kioskUrl = `${baseUrl}?mode=kiosk`;
         if (qrTableNumber) kioskUrl += `&table=${encodeURIComponent(qrTableNumber)}`;
+        if (formData.databaseSync?.firebaseProjectId) {
+            kioskUrl += `&pid=${encodeURIComponent(formData.databaseSync.firebaseProjectId)}`;
+        }
+
         new QRious({
             element: qrCanvasRef.current,
             value: kioskUrl,
@@ -138,7 +144,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
             background: '#ffffff'
         });
     }
-  }, [isQrModalOpen, qrTableNumber]);
+  }, [isQrModalOpen, qrTableNumber, formData.databaseSync?.firebaseProjectId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
