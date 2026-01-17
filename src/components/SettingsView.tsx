@@ -1,12 +1,12 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ShopSettings, TaxRateConfig, PaymentMethodConfig, Coupon, User, AddonGroup, AddonOption, Category } from '../types';
 import { loadUsers, saveUsers, createBackup, restoreBackup, clearAllLocalData } from '../services/storageService';
 import { performDatabaseSync } from '../services/syncService';
 import { printReceipt } from '../services/printerService';
 import { getTranslation } from '../utils/translations';
 // Added missing MessageSquare import from lucide-react
-import { Save, Building2, Wallet, Percent, Phone, MapPin, Mail, Check, Plus, Trash2, Image as ImageIcon, X, Palette, Ticket, Hash, Users, Shield, User as UserIcon, KeyRound, Database, Download, Upload, MonitorSmartphone, Server, Cloud, RefreshCw, Play, DownloadCloud, ShieldCheck, Eye, HelpCircle, Link, Moon, Sun, Layers, GripVertical, LockKeyhole, Store, Settings as SettingsIcon, Printer, Award, Gift, Smartphone, Send, Code, Target, AlertCircle, Coins, Calculator, Maximize2, Minimize2, LayoutGrid, QrCode, Share2, Bomb, RotateCcw, UserCheck, Calendar, EyeOff, PackageSearch, Tablet, ExternalLink, ChevronDown, ListTree, Monitor, ChevronRight, CreditCard, Banknote, Globe, Type, Flame, HardDrive, Trash, Info, Sparkles, EyeOff as EyeOffIcon, MessageSquare } from 'lucide-react';
+import { Save, Building2, Wallet, Percent, Phone, MapPin, Mail, Check, Plus, Trash2, Image as ImageIcon, X, Palette, Ticket, Hash, Users, Shield, User as UserIcon, KeyRound, Database, Download, Upload, MonitorSmartphone, Server, Cloud, RefreshCw, Play, DownloadCloud, ShieldCheck, Eye, HelpCircle, Link, Moon, Sun, Layers, GripVertical, LockKeyhole, Store, Settings as SettingsIcon, Printer, Award, Gift, Smartphone, Send, Code, Target, AlertCircle, Coins, Calculator, Maximize2, Minimize2, LayoutGrid, QrCode, Share2, Bomb, RotateCcw, UserCheck, Calendar, EyeOff, PackageSearch, Tablet, ExternalLink, ChevronDown, ListTree, Monitor, ChevronRight, CreditCard, Banknote, Globe, Type, Flame, HardDrive, Trash, Info, Sparkles, EyeOff as EyeOffIcon, MessageSquare, Copy, CheckCircle2 } from 'lucide-react';
 
 declare var QRious: any;
 
@@ -79,6 +79,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
   const [showSuccess, setShowSuccess] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [qrTableNumber, setQrTableNumber] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
@@ -124,18 +125,21 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
   
   const isAdmin = currentUser?.role === 'admin';
 
+  const generateKioskUrl = useCallback((table?: string) => {
+    let baseUrl = window.location.origin + window.location.pathname;
+    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+    
+    let kioskUrl = `${baseUrl}?mode=kiosk`;
+    if (table) kioskUrl += `&table=${encodeURIComponent(table)}`;
+    if (formData.databaseSync?.firebaseProjectId) {
+        kioskUrl += `&pid=${encodeURIComponent(formData.databaseSync.firebaseProjectId)}`;
+    }
+    return kioskUrl;
+  }, [formData.databaseSync?.firebaseProjectId]);
+
   useEffect(() => {
     if (isQrModalOpen && qrCanvasRef.current) {
-        let baseUrl = window.location.origin + window.location.pathname;
-        if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
-        
-        // Add pid (Project ID) to the URL so the phone knows where to sync from
-        let kioskUrl = `${baseUrl}?mode=kiosk`;
-        if (qrTableNumber) kioskUrl += `&table=${encodeURIComponent(qrTableNumber)}`;
-        if (formData.databaseSync?.firebaseProjectId) {
-            kioskUrl += `&pid=${encodeURIComponent(formData.databaseSync.firebaseProjectId)}`;
-        }
-
+        const kioskUrl = generateKioskUrl(qrTableNumber);
         new QRious({
             element: qrCanvasRef.current,
             value: kioskUrl,
@@ -145,7 +149,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
             background: '#ffffff'
         });
     }
-  }, [isQrModalOpen, qrTableNumber, formData.databaseSync?.firebaseProjectId]);
+  }, [isQrModalOpen, qrTableNumber, generateKioskUrl]);
+
+  const handleCopyUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -276,6 +286,23 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
 
                   <SettingsSection title="Digital Menu & Kiosk" icon={Tablet} styles={styleConfig}>
                       <div className="md:col-span-2 space-y-4">
+                          <div className="mb-4">
+                              <label className={`block text-xs font-black uppercase tracking-widest ${mutedText} mb-2`}>Public Menu URL</label>
+                              <div className="flex gap-2">
+                                  <div className={`flex-1 p-3 rounded-xl border ${borderColor} ${inputBackground} flex items-center gap-3 overflow-hidden group`}>
+                                      <Link className={`w-4 h-4 text-${themeColor}-600 flex-shrink-0`} />
+                                      <span className={`text-xs font-mono truncate ${textColor} select-all`}>{generateKioskUrl()}</span>
+                                  </div>
+                                  <button type="button" onClick={() => handleCopyUrl(generateKioskUrl())} className={`p-3 bg-${themeColor}-100 text-${themeColor}-600 rounded-xl hover:bg-${themeColor}-600 hover:text-white transition-all`}>
+                                      {isCopied ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                                  </button>
+                                  <a href={generateKioskUrl()} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all">
+                                      <ExternalLink className="w-5 h-5" />
+                                  </a>
+                              </div>
+                              <p className="text-[10px] text-gray-500 mt-2">Customers can scan a QR code or use this link to browse and order from their own devices.</p>
+                          </div>
+
                           <SettingsInput 
                               label="Landing Welcome Message" 
                               value={formData.kiosk.welcomeMessage} 
@@ -617,9 +644,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
                         <label className={`block text-xs font-black uppercase tracking-widest ${mutedText} mb-2 text-center`}>Table / Location Code</label>
                         <input type="text" placeholder="e.g. Table 05" className={`w-full p-4 rounded-xl border-2 ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-100 text-gray-800'} text-center font-bold text-lg focus:border-${themeColor}-500 outline-none transition-all shadow-inner`} value={qrTableNumber} onChange={(e) => setQrTableNumber(e.target.value)} />
                       </div>
-                      <div className="p-6 bg-white rounded-[32px] border-4 border-gray-100 shadow-inner mb-8">
+                      
+                      <div className="p-6 bg-white rounded-[32px] border-4 border-gray-100 shadow-inner mb-6">
                           <canvas ref={qrCanvasRef} />
                       </div>
+
+                      <div className={`w-full max-w-sm mb-8 p-3 rounded-2xl border ${borderColor} ${inputBackground} flex items-center gap-3 overflow-hidden group relative`}>
+                          <Link className={`w-4 h-4 text-${themeColor}-600 flex-shrink-0`} />
+                          <span className={`text-[10px] font-mono truncate ${textColor} flex-1 select-all`}>{generateKioskUrl(qrTableNumber)}</span>
+                          <button onClick={() => handleCopyUrl(generateKioskUrl(qrTableNumber))} className={`p-2 hover:bg-gray-100 rounded-lg transition-all ${isCopied ? 'text-green-600' : 'text-gray-400'}`}>
+                              {isCopied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                      </div>
+
                       <div className="flex gap-3 w-full">
                           <button type="button" onClick={() => { const canvas = qrCanvasRef.current; if (canvas) { const link = document.createElement('a'); link.download = `qr_kiosk_${qrTableNumber || 'general'}.png`; link.href = canvas.toDataURL(); link.click(); } }} className={`flex-1 py-4 ${isDark ? 'bg-gray-800 text-gray-200 border-gray-700' : 'bg-gray-100 text-gray-800 border-transparent'} border rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-opacity-80 transition-colors`}><Download className="w-5 h-5" /> Download</button>
                           <button type="button" onClick={() => {
