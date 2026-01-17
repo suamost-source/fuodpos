@@ -5,7 +5,8 @@ import { loadUsers, saveUsers, createBackup, restoreBackup, clearAllLocalData } 
 import { performDatabaseSync } from '../services/syncService';
 import { printReceipt } from '../services/printerService';
 import { getTranslation } from '../utils/translations';
-import { Save, Building2, Wallet, Percent, Phone, MapPin, Mail, Check, Plus, Trash2, Image as ImageIcon, X, Palette, Ticket, Hash, Users, Shield, User as UserIcon, KeyRound, Database, Download, Upload, MonitorSmartphone, Server, Cloud, RefreshCw, Play, DownloadCloud, ShieldCheck, Eye, HelpCircle, Link, Moon, Sun, Layers, GripVertical, LockKeyhole, Store, Settings as SettingsIcon, Printer, Award, Gift, Smartphone, Send, Code, Target, AlertCircle, Coins, Calculator, Maximize2, Minimize2, LayoutGrid, QrCode, Share2, Bomb, RotateCcw, UserCheck, Calendar, EyeOff, PackageSearch, Tablet, ExternalLink, ChevronDown, ListTree, Monitor, ChevronRight, CreditCard, Banknote, Globe, Type, Flame } from 'lucide-react';
+// Added missing MessageSquare import from lucide-react
+import { Save, Building2, Wallet, Percent, Phone, MapPin, Mail, Check, Plus, Trash2, Image as ImageIcon, X, Palette, Ticket, Hash, Users, Shield, User as UserIcon, KeyRound, Database, Download, Upload, MonitorSmartphone, Server, Cloud, RefreshCw, Play, DownloadCloud, ShieldCheck, Eye, HelpCircle, Link, Moon, Sun, Layers, GripVertical, LockKeyhole, Store, Settings as SettingsIcon, Printer, Award, Gift, Smartphone, Send, Code, Target, AlertCircle, Coins, Calculator, Maximize2, Minimize2, LayoutGrid, QrCode, Share2, Bomb, RotateCcw, UserCheck, Calendar, EyeOff, PackageSearch, Tablet, ExternalLink, ChevronDown, ListTree, Monitor, ChevronRight, CreditCard, Banknote, Globe, Type, Flame, HardDrive, Trash, Info, Sparkles, EyeOff as EyeOffIcon, MessageSquare } from 'lucide-react';
 
 declare var QRious: any;
 
@@ -83,8 +84,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
   const backupInputRef = useRef<HTMLInputElement>(null);
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
   const categoryImageInputRef = useRef<HTMLInputElement>(null);
+  const brandingInputRef = useRef<HTMLInputElement>(null);
   const [uploadingForCategoryId, setUploadingForCategoryId] = useState<string | null>(null);
   const [uploadingForId, setUploadingForId] = useState<string | null>(null);
+  const [brandingTarget, setBrandingTarget] = useState<'logo' | 'background' | null>(null);
 
   const [users, setUsers] = useState<User[]>([]);
 
@@ -157,7 +160,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
     });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'payment' | 'loginLogo' | 'loginBg' | 'receiptLogo' | 'category') => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'payment' | 'loginLogo' | 'loginBg' | 'receiptLogo' | 'category' | 'branding') => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -167,13 +170,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        let maxSize = type === 'loginBg' ? 800 : 300;
+        let maxSize = (type === 'loginBg' || (type === 'branding' && brandingTarget === 'background')) ? 1200 : 400;
         let width = img.width; let height = img.height;
         if (width > height) { if (width > maxSize) { height *= maxSize / width; width = maxSize; } } 
         else { if (height > maxSize) { width *= maxSize / height; height = maxSize; } }
         canvas.width = width; canvas.height = height;
         ctx?.drawImage(img, 0, 0, width, height);
-        const optimizedImage = canvas.toDataURL('image/jpeg', 0.7);
+        const optimizedImage = canvas.toDataURL('image/jpeg', 0.8);
         
         if (type === 'category' && uploadingForCategoryId) {
             setFormData(prev => ({
@@ -184,25 +187,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
         } else if (type === 'payment' && uploadingForId) {
             setFormData(prev => ({ ...prev, paymentMethods: prev.paymentMethods.map(pm => pm.id === uploadingForId ? { ...pm, image: optimizedImage } : pm) }));
             setUploadingForId(null);
+        } else if (type === 'branding') {
+            if (brandingTarget === 'logo') setFormData(prev => ({...prev, loginScreen: { ...prev.loginScreen, customLogo: optimizedImage }}));
+            else if (brandingTarget === 'background') setFormData(prev => ({...prev, loginScreen: { ...prev.loginScreen, backgroundImage: optimizedImage }}));
+            setBrandingTarget(null);
         } else if (type === 'loginLogo') setFormData(prev => ({...prev, loginScreen: { ...prev.loginScreen, customLogo: optimizedImage }}));
         else if (type === 'loginBg') setFormData(prev => ({...prev, loginScreen: { ...prev.loginScreen, backgroundImage: optimizedImage }}));
         else if (type === 'receiptLogo') setFormData(prev => ({...prev, receipt: { ...prev.receipt, logo: optimizedImage }}));
       };
     };
     reader.readAsDataURL(file);
-  };
-
-  const addCategory = () => {
-      const newCat: Category = { id: Date.now().toString(), name: 'New Category', showInPos: true, showInKiosk: true };
-      setFormData({ ...formData, categories: [...formData.categories, newCat] });
-  };
-
-  const updateCategory = (id: string, updates: Partial<Category>) => {
-      setFormData({ ...formData, categories: formData.categories.map(c => c.id === id ? { ...c, ...updates } : c) });
-  };
-
-  const removeCategory = (id: string) => {
-      setFormData({ ...formData, categories: formData.categories.filter(c => c.id !== id) });
   };
 
   const handleBackupDownload = () => {
@@ -230,53 +224,22 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
       reader.readAsText(file);
   };
 
+  const handleResetOrders = () => {
+      if (confirm("Reset order counter to 1?")) {
+          setFormData({ ...formData, nextOrderNumber: 1 });
+      }
+  };
+
+  const handleClearCache = () => {
+      if (confirm("DANGER: This will delete ALL local data (products, members, sales) and reset to defaults. Are you absolutely sure?")) {
+          clearAllLocalData();
+          window.location.reload();
+      }
+  };
+
   const addUser = () => setUsers([...users, { id: Date.now().toString(), name: 'Staff Member', username: `user${users.length + 1}`, password: 'password', role: 'cashier' }]);
   const updateUser = (id: string, field: keyof User, value: any) => setUsers(users.map(u => u.id === id ? { ...u, [field]: value } : u));
   const removeUser = (id: string) => { if (users.length <= 1) return; setUsers(users.filter(u => u.id !== id)); };
-
-  const addModifierTemplate = () => {
-      const newTemplate: AddonGroup = { id: `tpl-${Date.now()}`, name: 'New Template', required: false, multiple: false, options: [] };
-      setFormData({ ...formData, globalAddons: [...(formData.globalAddons || []), newTemplate] });
-  };
-
-  const updateModifierTemplate = (id: string, updates: Partial<AddonGroup>) => {
-      setFormData({ ...formData, globalAddons: formData.globalAddons.map(t => t.id === id ? { ...t, ...updates } : t) });
-  };
-
-  const removeModifierTemplate = (id: string) => {
-      setFormData({ ...formData, globalAddons: formData.globalAddons.filter(t => t.id !== id) });
-  };
-
-  const addTemplateOption = (templateId: string) => {
-      const newOption: AddonOption = { id: `opt-${Date.now()}`, name: 'New Option', price: 0 };
-      setFormData({ ...formData, globalAddons: formData.globalAddons.map(t => t.id === templateId ? { ...t, options: [...t.options, newOption] } : t) });
-  };
-
-  const updateTemplateOption = (templateId: string, optionId: string, updates: Partial<AddonOption>) => {
-      setFormData({ ...formData, globalAddons: formData.globalAddons.map(t => t.id === templateId ? { ...t, options: t.options.map(o => o.id === optionId ? { ...o, ...updates } : o) } : t) });
-  };
-
-  const removeTemplateOption = (templateId: string, optionId: string) => {
-      setFormData({ ...formData, globalAddons: formData.globalAddons.map(t => t.id === templateId ? { ...t, options: t.options.filter(o => o.id !== optionId) } : t) });
-  };
-
-  const addTaxRate = () => {
-      const newTax: TaxRateConfig = { id: `tax_${Date.now()}`, name: 'New Tax', rate: 0, enabled: true };
-      setFormData({ ...formData, taxRates: [...formData.taxRates, newTax] });
-  };
-
-  const updateTaxRate = (id: string, field: keyof TaxRateConfig, value: any) => {
-      setFormData({ ...formData, taxRates: formData.taxRates.map(tr => tr.id === id ? { ...tr, [field]: value } : tr) });
-  };
-
-  const addPaymentMethod = () => {
-      const newMethod: PaymentMethodConfig = { id: `pm_${Date.now()}`, name: 'New Method', type: 'other', enabled: true };
-      setFormData({ ...formData, paymentMethods: [...formData.paymentMethods, newMethod] });
-  };
-
-  const updatePaymentMethod = (id: string, field: keyof PaymentMethodConfig, value: any) => {
-      setFormData({ ...formData, paymentMethods: formData.paymentMethods.map(pm => pm.id === id ? { ...pm, [field]: value } : pm) });
-  };
 
   return (
     <div className={`h-full ${backgroundColor} overflow-hidden flex flex-col`}>
@@ -304,6 +267,78 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
                       <SettingsInput label={t('address')} value={formData.address} onChange={(e: any) => setFormData({...formData, address: e.target.value})} icon={MapPin} styles={styleConfig} placeholder="123 Main St, City" />
                   </SettingsSection>
 
+                  <SettingsSection title="Digital Menu & Kiosk" icon={Tablet} styles={styleConfig}>
+                      <div className="md:col-span-2 space-y-4">
+                          <SettingsInput 
+                              label="Landing Welcome Message" 
+                              value={formData.kiosk.welcomeMessage} 
+                              onChange={(e: any) => setFormData({...formData, kiosk: {...formData.kiosk, welcomeMessage: e.target.value}})} 
+                              icon={Sparkles} 
+                              styles={styleConfig} 
+                              placeholder="e.g. Welcome to Our Store" 
+                          />
+                          <SettingsInput 
+                              label="Marketing Tagline" 
+                              value={formData.kiosk.tagline} 
+                              onChange={(e: any) => setFormData({...formData, kiosk: {...formData.kiosk, tagline: e.target.value}})} 
+                              icon={MessageSquare} 
+                              styles={styleConfig} 
+                              placeholder="e.g. Premium flavors crafted for you." 
+                          />
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className={`w-10 h-5 rounded-full relative transition-colors ${formData.kiosk.showTagline ? `bg-${themeColor}-600` : 'bg-gray-300'}`}><div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${formData.kiosk.showTagline ? 'translate-x-5' : 'translate-x-0.5'}`} /></div>
+                                <input type="checkbox" className="hidden" checked={formData.kiosk.showTagline} onChange={(e) => setFormData({...formData, kiosk: {...formData.kiosk, showTagline: e.target.checked}})} />
+                                <span className={`font-bold text-xs ${textColor}`}>Show Tagline on Start</span>
+                            </label>
+                            
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className={`w-10 h-5 rounded-full relative transition-colors ${formData.hideOutOfStock ? `bg-${themeColor}-600` : 'bg-gray-300'}`}><div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${formData.hideOutOfStock ? 'translate-x-5' : 'translate-x-0.5'}`} /></div>
+                                <input type="checkbox" className="hidden" checked={formData.hideOutOfStock} onChange={(e) => setFormData({...formData, hideOutOfStock: e.target.checked})} />
+                                <span className={`font-bold text-xs ${textColor}`}>Hide Sold-Out Items</span>
+                            </label>
+                          </div>
+
+                          <div className={`mt-4 p-5 rounded-2xl border-2 border-dashed ${borderColor} ${isDark ? 'bg-gray-800/50' : 'bg-gray-50'} flex flex-col sm:flex-row items-center justify-between gap-4`}>
+                              <div className="flex items-center gap-3">
+                                  <div className={`p-2.5 bg-${themeColor}-100 rounded-xl text-${themeColor}-600`}><QrCode className="w-5 h-5" /></div>
+                                  <div className="text-left">
+                                      <h4 className="font-bold text-sm">Table Ordering QR</h4>
+                                      <p className="text-[10px] text-gray-500">Generate scan-to-order codes for tables</p>
+                                  </div>
+                              </div>
+                              <button type="button" onClick={() => setIsQrModalOpen(true)} className={`px-5 py-2 bg-${themeColor}-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all`}>Open Generator</button>
+                          </div>
+                      </div>
+                  </SettingsSection>
+
+                  <SettingsSection title="Storefront Branding" icon={LayoutGrid} styles={styleConfig}>
+                      <div className="space-y-4">
+                          <label className={`block text-xs font-black uppercase tracking-widest ${mutedText}`}>Store Logo</label>
+                          <div className={`aspect-video rounded-2xl border-2 border-dashed ${borderColor} flex items-center justify-center relative overflow-hidden group cursor-pointer`} onClick={() => { setBrandingTarget('logo'); brandingInputRef.current?.click(); }}>
+                              {formData.loginScreen.customLogo ? (
+                                  <img src={formData.loginScreen.customLogo} className="w-full h-full object-contain p-4" />
+                              ) : (
+                                  <ImageIcon className="w-8 h-8 opacity-20" />
+                              )}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">Change Logo</div>
+                          </div>
+                      </div>
+                      <div className="space-y-4">
+                          <label className={`block text-xs font-black uppercase tracking-widest ${mutedText}`}>Kiosk/Login Background</label>
+                          <div className={`aspect-video rounded-2xl border-2 border-dashed ${borderColor} flex items-center justify-center relative overflow-hidden group cursor-pointer`} onClick={() => { setBrandingTarget('background'); brandingInputRef.current?.click(); }}>
+                              {formData.loginScreen.backgroundImage ? (
+                                  <img src={formData.loginScreen.backgroundImage} className="w-full h-full object-cover" />
+                              ) : (
+                                  <Monitor className="w-8 h-8 opacity-20" />
+                              )}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">Change Background</div>
+                          </div>
+                      </div>
+                      <input type="file" ref={brandingInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'branding')} />
+                  </SettingsSection>
+
                   <SettingsSection title="Localization & Sequencing" icon={Globe} styles={styleConfig}>
                       <div>
                           <label className={`block text-sm font-medium ${labelColor} ${labelMargin}`}>{t('language')}</label>
@@ -329,11 +364,175 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
                       {formData.membership.enabled && (
                           <>
                               <SettingsInput label={t('earnRate')} value={formData.membership.earnRate} onChange={(e: any) => setFormData({...formData, membership: {...formData.membership, earnRate: parseFloat(e.target.value) || 0}})} type="number" icon={Coins} helpText={t('earnRateHelp')} styles={styleConfig} />
-                              <SettingsInput label={t('redeemRate')} value={formData.membership.redeemRate} onChange={(e: any) => setFormData({...formData, membership: {...formData.membership, redeemRate: parseFloat(e.target.value) || 0}})} type="number" icon={Gift} helpText={t('redeemRateHelp')} styles={styleConfig} />
+                              <SettingsInput label={t('redeemRate')} value={formData.membership.earnRate} onChange={(e: any) => setFormData({...formData, membership: {...formData.membership, redeemRate: parseFloat(e.target.value) || 0}})} type="number" icon={Gift} helpText={t('redeemRateHelp')} styles={styleConfig} />
                               <SettingsInput label={t('minRedeemPoints')} value={formData.membership.minRedeemPoints || 0} onChange={(e: any) => setFormData({...formData, membership: {...formData.membership, minRedeemPoints: parseInt(e.target.value) || 0}})} type="number" icon={Target} helpText={t('minRedeemPointsHelp')} styles={styleConfig} />
                               <SettingsInput label={t('maxDiscountPercentageByPoints')} value={formData.membership.maxDiscountPercentageByPoints || 100} onChange={(e: any) => setFormData({...formData, membership: {...formData.membership, maxDiscountPercentageByPoints: parseInt(e.target.value) || 0}})} type="number" icon={Percent} helpText={t('maxDiscountPercentageByPointsHelp')} styles={styleConfig} />
                           </>
                       )}
+                  </SettingsSection>
+              </div>
+          )}
+
+          {activeTab === 'system' && (
+              <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <SettingsSection title={t('appearance')} icon={Palette} styles={styleConfig}>
+                      <div className="md:col-span-2">
+                        <label className={`block text-sm font-medium ${labelColor} mb-3`}>{t('themeColor')}</label>
+                        <div className="grid grid-cols-5 sm:grid-cols-9 gap-3">
+                          {THEME_COLORS.map(c => (
+                            <button
+                              key={c.value}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, appearance: { ...formData.appearance, themeColor: c.value } })}
+                              className={`w-full aspect-square rounded-xl ${c.class} border-4 transition-all flex items-center justify-center ${themeColor === c.value ? 'border-gray-900 shadow-lg scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                              title={c.name}
+                            >
+                              {themeColor === c.value && <Check className="text-white w-5 h-5" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2 grid grid-cols-2 gap-4 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleThemeChange('light')}
+                          className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all ${!isDark ? `border-${themeColor}-600 bg-${themeColor}-50` : 'border-gray-200 opacity-60'}`}
+                        >
+                          <Sun className={`w-5 h-5 ${!isDark ? `text-${themeColor}-600` : ''}`} />
+                          <span className="font-bold">{t('light')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleThemeChange('dark')}
+                          className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all ${isDark ? `border-${themeColor}-600 bg-gray-800` : 'border-gray-200 opacity-60'}`}
+                        >
+                          <Moon className={`w-5 h-5 ${isDark ? `text-${themeColor}-400` : ''}`} />
+                          <span className="font-bold">{t('dark')}</span>
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className={`block text-sm font-medium ${labelColor} ${labelMargin}`}>{t('inputDensity')}</label>
+                        <select
+                          className={`w-full p-2 border ${inputBorder} rounded-lg ${inputBackground} ${textColor} outline-none focus:ring-2 focus:ring-${themeColor}-500`}
+                          value={formData.appearance.inputDensity}
+                          onChange={(e) => setFormData({ ...formData, appearance: { ...formData.appearance, inputDensity: e.target.value as any } })}
+                        >
+                          <option value="comfortable">{t('comfortable')}</option>
+                          <option value="compact">{t('compact')}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={`block text-sm font-medium ${labelColor} ${labelMargin}`}>{t('fontSize')}</label>
+                        <select
+                          className={`w-full p-2 border ${inputBorder} rounded-lg ${inputBackground} ${textColor} outline-none focus:ring-2 focus:ring-${themeColor}-500`}
+                          value={formData.appearance.fontSize}
+                          onChange={(e) => setFormData({ ...formData, appearance: { ...formData.appearance, fontSize: e.target.value as any } })}
+                        >
+                          <option value="text-sm">Small</option>
+                          <option value="text-base">Medium</option>
+                          <option value="text-lg">Large</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={`block text-sm font-medium ${labelColor} ${labelMargin}`}>Layout Optimization</label>
+                        <div className="relative">
+                            <Monitor className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${mutedText} w-4 h-4`} />
+                            <select
+                                className={`w-full pl-9 pr-4 py-2 border ${inputBorder} rounded-lg ${inputBackground} ${textColor} outline-none focus:ring-2 focus:ring-${themeColor}-500 appearance-none`}
+                                value={formData.appearance.layoutMode || 'desktop'}
+                                onChange={(e) => setFormData({ ...formData, appearance: { ...formData.appearance, layoutMode: e.target.value as any } })}
+                            >
+                                <option value="desktop">Desktop / Large Display</option>
+                                <option value="tablet">Tablet / Medium Display</option>
+                                <option value="mobile">Mobile / Compact Display</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className={`block text-sm font-medium ${labelColor} ${labelMargin}`}>Product Grid Scaling</label>
+                        <div className="relative">
+                            <LayoutGrid className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${mutedText} w-4 h-4`} />
+                            <select
+                                className={`w-full pl-9 pr-4 py-2 border ${inputBorder} rounded-lg ${inputBackground} ${textColor} outline-none focus:ring-2 focus:ring-${themeColor}-500 appearance-none`}
+                                value={formData.appearance.productIconSize || 'normal'}
+                                onChange={(e) => setFormData({ ...formData, appearance: { ...formData.appearance, productIconSize: e.target.value as any } })}
+                            >
+                                <option value="normal">Standard (Small)</option>
+                                <option value="large">Card (Medium)</option>
+                                <option value="enlarge">Ultra (Large)</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        </div>
+                      </div>
+                  </SettingsSection>
+
+                  <SettingsSection title="Maintenance & Utilities" icon={HardDrive} styles={styleConfig} fullWidth>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          <div className={`p-5 rounded-2xl border ${borderColor} ${isDark ? 'bg-gray-800' : 'bg-gray-50'} flex flex-col`}>
+                              <div className="flex items-center gap-3 mb-3">
+                                  <RotateCcw className="w-5 h-5 text-blue-500" />
+                                  <h4 className="font-bold text-sm">Sequence Control</h4>
+                              </div>
+                              <p className="text-xs text-gray-500 mb-4 flex-1">Reset the current order number back to 1. Usually done at the start of a business day.</p>
+                              <button type="button" onClick={handleResetOrders} className={`w-full py-2.5 px-4 bg-white border ${borderColor} rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-100 transition-all`}>Reset Order #</button>
+                          </div>
+
+                          <div className={`p-5 rounded-2xl border ${borderColor} ${isDark ? 'bg-gray-800' : 'bg-gray-50'} flex flex-col`}>
+                              <div className="flex items-center gap-3 mb-3">
+                                  <Trash className="w-5 h-5 text-red-500" />
+                                  <h4 className="font-bold text-sm">System Purge</h4>
+                              </div>
+                              <p className="text-xs text-gray-500 mb-4 flex-1">Factory reset. This will wipe the browser storage clean. Use only for troubleshooting.</p>
+                              <button type="button" onClick={handleClearCache} className={`w-full py-2.5 px-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all`}>Purge All Data</button>
+                          </div>
+
+                          <div className={`p-5 rounded-2xl border ${borderColor} ${isDark ? 'bg-gray-800' : 'bg-gray-50'} flex flex-col`}>
+                              <div className="flex items-center gap-3 mb-3">
+                                  <Info className="w-5 h-5 text-indigo-500" />
+                                  <h4 className="font-bold text-sm">System Info</h4>
+                              </div>
+                              <div className="space-y-2 mb-4 flex-1">
+                                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase"><span>Version</span><span className={textColor}>3.2.0</span></div>
+                                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase"><span>Platform</span><span className={textColor}>Web / PWA</span></div>
+                                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase"><span>Storage</span><span className={textColor}>Encrypted Local</span></div>
+                              </div>
+                              <div className="text-[9px] text-gray-400 italic">FuodPOS Malaysia - Robust Offline Architecture</div>
+                          </div>
+                      </div>
+                  </SettingsSection>
+
+                  <SettingsSection title={t('userAccounts')} icon={Users} styles={styleConfig} fullWidth>
+                      <div className="space-y-4">
+                          {users.map((u) => (
+                              <div key={u.id} className={`${cardBg} p-4 rounded-2xl border ${borderColor} flex flex-col md:flex-row items-center justify-between gap-4 group`}>
+                                  <div className="flex items-center gap-4 flex-1 w-full">
+                                      <div className={`w-10 h-10 rounded-xl bg-${themeColor}-100 flex items-center justify-center text-${themeColor}-600`}><UserIcon className="w-5 h-5" /></div>
+                                      <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                          <input type="text" className={`bg-transparent border-none outline-none font-bold text-sm ${textColor} w-full focus:ring-0`} value={u.name} onChange={(e) => updateUser(u.id, 'name', e.target.value)} placeholder="Full Name" />
+                                          <div className="flex items-center gap-2">
+                                              <UserCheck className="w-3 h-3 text-gray-400" />
+                                              <input type="text" className={`bg-transparent border-none outline-none text-xs font-bold text-gray-500 w-full focus:ring-0`} value={u.username} onChange={(e) => updateUser(u.id, 'username', e.target.value)} placeholder="username" />
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div className="flex items-center gap-4 w-full md:w-auto">
+                                      <select className={`p-1.5 border ${inputBorder} rounded-lg text-xs font-bold ${inputBackground} ${textColor} outline-none`} value={u.role} onChange={(e) => updateUser(u.id, 'role', e.target.value)}>
+                                          <option value="cashier">Cashier</option>
+                                          <option value="manager">Manager</option>
+                                          <option value="admin">Admin</option>
+                                      </select>
+                                      <button type="button" onClick={() => removeUser(u.id)} disabled={users.length <= 1} className="p-2 text-gray-300 hover:text-red-500 transition-colors disabled:opacity-0"><Trash2 className="w-4 h-4" /></button>
+                                  </div>
+                              </div>
+                          ))}
+                          <button type="button" onClick={addUser} className={`text-[10px] font-black uppercase text-${themeColor}-600 hover:opacity-70 flex items-center gap-1`}><Plus className="w-3 h-3" /> Create Account</button>
+                      </div>
                   </SettingsSection>
               </div>
           )}
