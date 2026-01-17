@@ -20,7 +20,8 @@ const App: React.FC = () => {
     const params = new URLSearchParams(window.location.search || window.location.hash.split('?')[1] || '');
     return {
       isKiosk: params.get('mode') === 'kiosk',
-      table: params.get('table')
+      table: params.get('table'),
+      projectId: params.get('pid') // Get Firebase Project ID from URL
     };
   };
 
@@ -60,9 +61,10 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const syncOnLoad = async () => {
-        if (navigator.onLine && settings.databaseSync?.enabled) {
+        // If we have a project ID in URL, prioritize syncing from it
+        if (navigator.onLine && (settings.databaseSync?.enabled || kioskParams.projectId)) {
             setIsInitialSyncing(true);
-            const result = await fetchFromHost();
+            const result = await fetchFromHost(kioskParams.projectId || undefined);
             if (result.success) {
                 refreshLocalState();
             }
@@ -88,7 +90,7 @@ const App: React.FC = () => {
         }
     }, 300000);
     return () => clearInterval(syncInterval);
-  }, [settings.databaseSync?.enabled]);
+  }, [settings.databaseSync?.enabled, settings.databaseSync?.firebaseProjectId]);
 
   const handleProductUpdate = (newProducts: Product[]) => {
     setProducts(newProducts);
@@ -162,7 +164,7 @@ const App: React.FC = () => {
         <div className={`h-screen ${settings.appearance.backgroundColor}`}>
             {isInitialSyncing && (
                 <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-2xl animate-bounce">
-                    <CloudLightning className="w-4 h-4" /> Updating Menu...
+                    <CloudLightning className="w-4 h-4" /> Syncing Menu...
                 </div>
             )}
             <CustomerMenuView 
