@@ -5,20 +5,20 @@ export interface Product {
   price: number;
   category: string;
   color?: string;
-  image?: string; // Optional image URL (Base64)
-  video?: string; // Optional video URL (Base64)
-  description?: string; // Product details
-  barcode?: string; // QR or Barcode string
-  addons?: AddonGroup[]; // Modifiers like toppings, size, etc.
+  image?: string; 
+  video?: string; 
+  description?: string; 
+  barcode?: string; 
+  addons?: AddonGroup[]; 
   lastUpdated?: number;
   isSynced?: boolean;
-  trackInventory?: boolean; // NEW: Toggle strict stock enforcement
-  stock?: number; // Current quantity on hand
-  minStock?: number; // Threshold for low stock warning
-  pointsPrice?: number; // Optional: Custom points cost for redemption (Redeem for free)
-  pointsAwarded?: number; // Optional: Custom bonus points earned when purchasing
-  isAvailable?: boolean; // Manual toggle for out of stock/availability
-  isChefSpecial?: boolean; // NEW: Mark item to appear in Kiosk featured section
+  trackInventory?: boolean; 
+  stock?: number; 
+  minStock?: number; 
+  pointsPrice?: number; 
+  pointsAwarded?: number; 
+  isAvailable?: boolean; 
+  isChefSpecial?: boolean; 
 }
 
 export interface AddonOption {
@@ -29,26 +29,26 @@ export interface AddonOption {
 
 export interface AddonGroup {
   id: string;
-  name: string; // e.g. "Size", "Toppings"
+  name: string; 
   required: boolean;
-  multiple: boolean; // Checkbox vs Radio
+  multiple: boolean; 
   options: AddonOption[];
-  parentOptionId?: string; // DEPENDENCY: Only show this group if this Option ID is selected
+  parentOptionId?: string; 
 }
 
 export interface CartItem extends Product {
   quantity: number;
-  selectedAddons?: AddonOption[]; // List of selected modifiers
-  cartId?: string; // Unique ID for cart item to distinguish same product with different addons
-  note?: string; // Item-specific remark/note
-  isReward?: boolean; // If true, price is 0 and paid by points
-  pointsCost?: number; // Cost in points per unit
+  selectedAddons?: AddonOption[]; 
+  cartId?: string; 
+  note?: string; 
+  isReward?: boolean; 
+  pointsCost?: number; 
 }
 
 export interface HeldCart {
     id: string;
     name: string;
-    ticketNumber?: string; // Track kiosk ticket ID
+    ticketNumber?: string; 
     items: CartItem[];
     member: Member | null;
     pointsToRedeem: number;
@@ -68,7 +68,7 @@ export interface PendingOrder {
     ticketNumber?: string;
     total: number;
     status: OrderStatus;
-    stationStatuses?: Record<string, OrderStatus>; // Tracks status per station: 'kitchen', 'drinks', 'bakery'
+    stationStatuses?: Record<string, OrderStatus>; 
 }
 
 export interface PaymentDetail {
@@ -81,34 +81,34 @@ export type UserRole = 'admin' | 'manager' | 'cashier';
 
 export interface User {
   id: string;
-  name: string; // Display Name (e.g. John Doe)
-  username: string; // Login ID
-  password: string; // Login Password
+  name: string; 
+  username: string; 
+  password: string; 
   role: UserRole;
   isSynced?: boolean;
 }
 
 export interface FavoriteOrder {
     id: string;
-    name: string; // e.g. "Morning Usual"
+    name: string; 
     items: CartItem[];
 }
 
 export interface Member {
     id: string;
-    memberCode?: string; // e.g. MBR-1001
+    memberCode?: string; 
     name: string;
     phone: string;
     email?: string;
-    emailVerified?: boolean; // New field for verification status
-    isFrozen?: boolean; // New field to temporarily block accounts
+    emailVerified?: boolean; 
+    isFrozen?: boolean; 
     address?: string;
     postcode?: string;
     state?: string;
-    customField?: string; // Customizable field 1 (e.g. Tax ID)
-    customField2?: string; // Customizable field 2 (e.g. Company)
+    customField?: string; 
+    customField2?: string; 
     points: number;
-    birthday?: string; // DD-MM-YYYY
+    birthday?: string; 
     joinDate: number;
     favorites: FavoriteOrder[];
     notes?: string;
@@ -117,22 +117,20 @@ export interface Member {
 }
 
 export interface Transaction {
-  id: string; // Internal Unique ID (Timestamp)
-  orderNumber: string; // Human readable custom ID (e.g. INV-1001)
+  id: string; 
+  orderNumber: string; 
   timestamp: number;
   items: CartItem[];
   subtotal: number;
-  discount?: number; // Amount discounted
-  couponCode?: string; // Code used
+  discount?: number; 
+  couponCode?: string; 
   taxTotal: number;
   total: number;
   currency: string;
-  payments: PaymentDetail[]; // Supports split payments
+  payments: PaymentDetail[]; 
   note?: string;
   cashierId?: string;
   cashierName?: string;
-  
-  // Membership additions
   memberId?: string;
   memberName?: string;
   pointsEarned?: number;
@@ -156,7 +154,7 @@ export type ViewState = 'pos' | 'transactions' | 'products' | 'dashboard' | 'set
 export interface TaxRateConfig {
   id: string;
   name: string;
-  rate: number; // Percentage
+  rate: number; 
   enabled: boolean;
 }
 
@@ -165,37 +163,36 @@ export interface PaymentMethodConfig {
   name: string;
   type: 'cash' | 'card' | 'digital' | 'other';
   enabled: boolean;
-  image?: string; // Base64 or URL
+  image?: string; 
 }
 
 export interface Coupon {
   id: string;
   code: string;
   type: 'percent' | 'fixed' | 'bogo';
-  value: number; // Used for percent/fixed value
+  value: number; 
   minOrder?: number;
-  expiryDate?: string; // YYYY-MM-DD
+  expiryDate?: string; 
   enabled: boolean;
-  // BOGO specific
   buyQty?: number;
   getQty?: number;
-  discountPercent?: number; // 100 for free, 50 for half off
+  discountPercent?: number; 
 }
 
 export interface AppearanceConfig {
-  themeColor: string; // 'blue', 'indigo', 'purple', 'pink', 'red', 'orange', 'green', 'teal', 'slate'
-  backgroundColor: string; // 'bg-gray-100', 'bg-white', 'bg-slate-50'
-  fontSize: 'text-sm' | 'text-base' | 'text-lg'; // Small, Medium, Large
+  themeColor: string; 
+  backgroundColor: string; 
+  fontSize: 'text-sm' | 'text-base' | 'text-lg'; 
   inputDensity: 'comfortable' | 'compact';
-  textColor: string; // 'text-gray-600', 'text-gray-800', 'text-black'
-  inputBackground: string; // 'bg-white', 'bg-gray-50', 'bg-gray-100'
-  productIconSize?: 'normal' | 'large' | 'enlarge'; // Icon size in POS view
-  layoutMode?: 'desktop' | 'tablet' | 'mobile'; // New: Target device mode
+  textColor: string; 
+  inputBackground: string; 
+  productIconSize?: 'normal' | 'large' | 'enlarge'; 
+  layoutMode?: 'desktop' | 'tablet' | 'mobile'; 
 }
 
 export interface LoginScreenConfig {
-    customLogo?: string; // Base64 string
-    backgroundImage?: string; // Base64 string
+    customLogo?: string; 
+    backgroundImage?: string; 
     welcomeMessage: string;
     showStoreName: boolean;
 }
@@ -207,116 +204,96 @@ export interface KioskConfig {
 }
 
 export interface ReceiptConfig {
-    logo?: string; // Base64
+    logo?: string; 
     showLogo: boolean;
-    headerText?: string; // Custom message at top
-    footerText?: string; // Custom message at bottom (e.g. Returns Policy)
+    headerText?: string; 
+    footerText?: string; 
     showShopName: boolean;
     showAddress: boolean;
     showContact: boolean;
-    paperSize: '58mm' | '80mm'; // Thermal paper width
-    autoPrint?: boolean; // New field for auto-printing receipts
+    paperSize: '58mm' | '80mm'; 
+    autoPrint?: boolean; 
 }
 
 export interface MembershipConfig {
     enabled: boolean;
-    earnRate: number; // Points earned per 1 unit of currency (e.g. 1 point per $1)
-    redeemRate: number; // Points needed for 1 unit of currency discount (e.g. 100 points = $1)
-    minRedeemPoints?: number; // MINIMUM balance to allow any redemption
-    maxRedeemPointsPerTx?: number; // MAXIMUM points allowed per order
-    maxDiscountPercentageByPoints?: number; // e.g. 50 means points can only pay for 50% of the bill
+    earnRate: number; 
+    redeemRate: number; 
+    minRedeemPoints?: number; 
+    maxRedeemPointsPerTx?: number; 
+    maxDiscountPercentageByPoints?: number; 
     enableBirthdayReward: boolean;
-    birthdayRewardWindow?: 'day' | 'week' | 'month'; // Duration for reward validity
+    birthdayRewardWindow?: 'day' | 'week' | 'month'; 
     birthdayRewardMessage: string;
 }
 
 export interface EmailJsConfig {
     serviceId: string;
-    templateId: string; // Main receipt template
-    verifyTemplateId?: string; // Customer verification template
+    templateId: string; 
+    verifyTemplateId?: string; 
     publicKey: string;
-    customMessage?: string; // Custom message template to be sent as {{message}} variable
+    customMessage?: string; 
 }
 
 export interface DatabaseSyncConfig {
     enabled: boolean;
-    syncMode: 'cloud' | 'local'; // New: Choose between Internet or LAN
+    syncMode: 'cloud' | 'local' | 'firebase'; // 增加 Firebase 模式
     
     // Cloud Settings
     cloudApiUrl: string;
     apiKey?: string;
     
+    // Firebase Specific
+    firebaseApiKey?: string;
+    firebaseProjectId?: string;
+    firebaseAppId?: string;
+    
     // Local Settings
-    localApiUrl: string; // e.g., http://192.168.1.100:3000
+    localApiUrl: string; 
     
     // Identification
-    terminalId: string; // e.g. POS-01, KIOSK-02
+    terminalId: string; 
 
-    autoSyncInterval: number; // Minutes
+    autoSyncInterval: number; 
     lastSyncTimestamp?: number;
 }
 
 export interface Category {
     id: string;
     name: string;
-    image?: string; // Base64 image
-    parentId?: string; // Supports sub-categories
-    showInPos?: boolean; // Toggle for POS view
-    showInKiosk?: boolean; // Toggle for Customer Menu
+    image?: string; 
+    parentId?: string; 
+    showInPos?: boolean; 
+    showInKiosk?: boolean; 
 }
 
 export interface ShopSettings {
   shopName: string;
-  language: 'en' | 'zh' | 'ms'; // Added Language
+  language: 'en' | 'zh' | 'ms'; 
   contact: string;
   address: string;
   email: string;
   socialMedia: string;
   defaultOrderNote?: string;
-  
-  // Product Categories (Customizable) - Now object array
   categories: Category[];
-
-  // Order Numbering
   orderPrefix: string;
   nextOrderNumber: number;
-
   currency: string;
   taxRates: TaxRateConfig[];
   paymentMethods: PaymentMethodConfig[];
   coupons: Coupon[];
   appearance: AppearanceConfig;
-  
-  // New Login Config
   loginScreen: LoginScreenConfig;
-
-  // New Kiosk Config
   kiosk: KioskConfig;
-
-  // New Receipt Config
   receipt: ReceiptConfig;
-
-  // Membership Config
   membership: MembershipConfig;
-  
-  // Custom Member Fields
   enableMemberCustomField1?: boolean;
   memberCustomFieldName?: string; 
   enableMemberCustomField2?: boolean;
   memberCustomField2Name?: string; 
-  
-  // Email Integration
   emailConfig?: EmailJsConfig;
-  
-  // Database Sync (Renamed from cloudSync)
   databaseSync?: DatabaseSyncConfig;
-
-  // Global Modifier Templates
   globalAddons: AddonGroup[];
-
-  // New Registration settings
   registrationFormUrl?: string;
-
-  // New Inventory behavior
   hideOutOfStock?: boolean;
 }
