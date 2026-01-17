@@ -16,7 +16,6 @@ import { performDatabaseSync, fetchFromHost, syncRecordImmediately } from './ser
 import { Menu, CloudLightning } from 'lucide-react';
 
 const App: React.FC = () => {
-  // Utility to check for Kiosk parameters
   const getKioskParams = () => {
     const params = new URLSearchParams(window.location.search || window.location.hash.split('?')[1] || '');
     return {
@@ -27,7 +26,6 @@ const App: React.FC = () => {
 
   const kioskParams = getKioskParams();
 
-  // Initialize state synchronously for immediate render
   const [currentUser, setCurrentUser] = useState<User | null>(() => loadUsers()[0]);
   const [isKioskMode, setIsKioskMode] = useState<boolean>(kioskParams.isKiosk);
   const [currentView, setCurrentView] = useState<ViewState>(kioskParams.isKiosk ? 'menu' : 'pos');
@@ -51,26 +49,33 @@ const App: React.FC = () => {
 
   const [activeCartId, setActiveCartId] = useState<string>(() => heldCarts[0]?.id || 'initial');
 
+  const refreshLocalState = () => {
+      setProducts(loadProducts());
+      setTransactions(loadTransactions());
+      setMembers(loadMembers());
+      setStockPurchases(loadStockPurchases());
+      setSettings(loadSettings());
+      setPendingOrders(loadPendingOrders());
+  };
+
   useEffect(() => {
-    // Initial sync check if online and enabled
     const syncOnLoad = async () => {
         if (navigator.onLine && settings.databaseSync?.enabled) {
             setIsInitialSyncing(true);
             const result = await fetchFromHost();
             if (result.success) {
-                setProducts(loadProducts());
-                setTransactions(loadTransactions());
-                setMembers(loadMembers());
-                setStockPurchases(loadStockPurchases());
-                setSettings(loadSettings());
+                refreshLocalState();
             }
             setIsInitialSyncing(false);
         }
     };
     syncOnLoad();
+
+    // 监听数据同步事件（用于多设备同步刷新）
+    window.addEventListener('data-synced', refreshLocalState);
+    return () => window.removeEventListener('data-synced', refreshLocalState);
   }, []);
 
-  // Persistence triggers
   useEffect(() => { savePendingOrders(pendingOrders); }, [pendingOrders]);
   useEffect(() => { if (heldCarts.length > 0) saveHeldCarts(heldCarts); }, [heldCarts]);
 
@@ -109,19 +114,8 @@ const App: React.FC = () => {
       saveStockPurchase(stockPurchase);
   };
 
-  const getStation = (item: CartItem) => {
-      if (['Drinks', 'Coffee'].includes(item.category)) return 'drinks';
-      if (['Bakery'].includes(item.category)) return 'bakery';
-      return 'kitchen';
-  };
-
   const handleMenuOrderSubmit = (order: PendingOrder) => {
-      const stationStatuses: Record<string, OrderStatus> = {};
-      order.items.forEach(item => {
-          stationStatuses[getStation(item)] = 'pending';
-      });
-      const orderWithStations = { ...order, stationStatuses };
-      setPendingOrders(prev => [...prev, orderWithStations]);
+      setPendingOrders(prev => [...prev, order]);
   };
 
   const handleUpdateOrderStatus = (orderId: string, status: OrderStatus, stationId?: string) => {
@@ -129,28 +123,11 @@ const App: React.FC = () => {
           setPendingOrders(prev => prev.filter(o => o.id !== orderId));
           return;
       }
-
-      setPendingOrders(prev => prev.map(o => {
-          if (o.id !== orderId) return o;
-          
-          if (stationId) {
-              const newStationStatuses = { ...o.stationStatuses, [stationId]: status };
-              const allReady = Object.values(newStationStatuses).every(s => s === 'ready');
-              return { 
-                  ...o, 
-                  stationStatuses: newStationStatuses,
-                  status: allReady ? 'ready' : (Object.values(newStationStatuses).some(s => s === 'preparing') ? 'preparing' : 'pending')
-              };
-          }
-          
-          return { ...o, status };
-      }));
+      setPendingOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
   };
 
   const handleTransactionComplete = (transaction: Transaction) => {
     const txWithUser = { ...transaction, cashierId: currentUser?.id, cashierName: currentUser?.name };
-    
-    // STRICT STOCK DEDUCTION
     const updatedProducts = products.map(p => {
         const cartItem = transaction.items.find(i => i.id === p.id);
         if (cartItem && p.trackInventory) {
@@ -158,11 +135,9 @@ const App: React.FC = () => {
         }
         return p;
     });
-    
     setProducts(updatedProducts);
     saveProducts(updatedProducts);
 
-    // Membership Logic
     if (txWithUser.memberId && settings.membership.enabled) {
         const updatedMembers = members.map(m => {
             if (m.id === txWithUser.memberId) {
@@ -177,8 +152,7 @@ const App: React.FC = () => {
         saveMembers(updatedMembers);
     }
 
-    const updatedTxs = [txWithUser, ...transactions];
-    setTransactions(updatedTxs);
+    setTransactions([txWithUser, ...transactions]);
     saveTransaction(txWithUser);
     syncRecordImmediately('transaction', txWithUser);
   };
@@ -186,6 +160,11 @@ const App: React.FC = () => {
   if (isKioskMode) {
       return (
         <div className={`h-screen ${settings.appearance.backgroundColor}`}>
+            {isInitialSyncing && (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-2xl animate-bounce">
+                    <CloudLightning className="w-4 h-4" /> Updating Menu...
+                </div>
+            )}
             <CustomerMenuView 
                 products={products} 
                 settings={settings} 
@@ -197,19 +176,11 @@ const App: React.FC = () => {
 
   if (!currentUser) return <div className="flex items-center justify-center h-screen font-black text-2xl uppercase tracking-tighter">System Critical: No Admin Account Found</div>;
 
-  const layoutMode = settings.appearance.layoutMode || 'desktop';
-  const getLayoutClasses = () => {
-    if (layoutMode === 'mobile') return 'max-w-[430px] mx-auto shadow-2xl border-x border-gray-200';
-    if (layoutMode === 'tablet') return 'max-w-[1024px] mx-auto shadow-2xl border-x border-gray-200';
-    return 'w-full';
-  };
-
   const isDark = settings.appearance.backgroundColor.includes('900') || settings.appearance.backgroundColor.includes('800');
 
   return (
     <div className={`flex h-screen bg-gray-950 items-center justify-center overflow-hidden`}>
-      <div className={`flex h-full ${getLayoutClasses()} ${settings.appearance.backgroundColor} ${settings.appearance.fontSize} ${settings.appearance.textColor} overflow-hidden font-sans transition-all duration-500`}>
-        {/* Mobile Navbar with Theme Awareness */}
+      <div className={`flex h-full w-full ${settings.appearance.backgroundColor} ${settings.appearance.fontSize} ${settings.appearance.textColor} overflow-hidden font-sans transition-all duration-500`}>
         <div className={`md:hidden fixed top-0 left-0 right-0 h-16 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} z-20 border-b flex items-center px-4 justify-between shadow-sm`}>
           <div className="flex items-center gap-2">
               <div className={`w-8 h-8 bg-${settings.appearance.themeColor}-600 rounded-lg flex items-center justify-center shadow-sm`}>
@@ -217,12 +188,7 @@ const App: React.FC = () => {
               </div>
               <h1 className={`text-lg font-black truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{settings.shopName}</h1>
           </div>
-          <button 
-              onClick={() => setIsMobileOpen(true)} 
-              className={`p-2.5 rounded-xl ${isDark ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-600'} transition-all active:scale-95`}
-          >
-              <Menu />
-          </button>
+          <button onClick={() => setIsMobileOpen(true)} className={`p-2.5 rounded-xl ${isDark ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}><Menu /></button>
         </div>
 
         <Sidebar currentView={currentView} setView={setCurrentView} isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} settings={settings} currentUser={currentUser} onLogout={() => {}} />
@@ -230,7 +196,7 @@ const App: React.FC = () => {
         <main className="flex-1 h-full overflow-hidden pt-16 md:pt-0 relative">
           {isInitialSyncing && (
               <div className="absolute top-4 right-4 z-50 bg-blue-600 text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg animate-pulse">
-                  <CloudLightning className="w-3 h-3" /> Updating from Cloud...
+                  <CloudLightning className="w-3 h-3" /> Syncing...
               </div>
           )}
           
@@ -240,7 +206,7 @@ const App: React.FC = () => {
                   settings={settings} 
                   onSubmitOrder={handleMenuOrderSubmit}
                   onBack={() => setCurrentView('pos')}
-                  autoStart={true} // Inside POS view, we start directly at the menu
+                  autoStart={true} 
               />
           )}
 
