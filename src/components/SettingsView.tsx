@@ -95,7 +95,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
       setUsers(loadUsers());
   }, []);
 
-  const { themeColor, inputBackground, inputDensity, textColor, backgroundColor, productIconSize = 'normal', layoutMode = 'desktop' } = formData.appearance;
+  const { themeColor, inputBackground, inputDensity, backgroundColor, productIconSize = 'normal', layoutMode = 'desktop' } = formData.appearance;
   const t = (key: any) => getTranslation(formData.language, key);
 
   const isDark = backgroundColor?.includes('900') || backgroundColor?.includes('800');
@@ -105,6 +105,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
   const mutedText = isDark ? 'text-gray-400' : 'text-gray-500';
   const inputBorder = isDark ? 'border-gray-600' : 'border-gray-200';
   
+  const textColor = isDark ? 'text-gray-100' : 'text-gray-800';
   const inputPadding = inputDensity === 'compact' ? 'py-1.5' : 'py-2';
   const labelMargin = inputDensity === 'compact' ? 'mb-1' : 'mb-2';
 
@@ -324,7 +325,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
                           <label className={`block text-xs font-black uppercase tracking-widest ${mutedText}`}>Store Logo</label>
                           <div className={`aspect-video rounded-2xl border-2 border-dashed ${borderColor} flex items-center justify-center relative overflow-hidden group cursor-pointer`} onClick={() => { setBrandingTarget('logo'); brandingInputRef.current?.click(); }}>
                               {formData.loginScreen.customLogo ? (
-                                  <img src={formData.loginScreen.customLogo} className="w-full h-full object-contain p-4" />
+                                  <img src={formData.loginScreen.customLogo} className="w-full h-full object-contain p-4" alt="Store Logo" />
                               ) : (
                                   <ImageIcon className="w-8 h-8 opacity-20" />
                               )}
@@ -335,7 +336,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
                           <label className={`block text-xs font-black uppercase tracking-widest ${mutedText}`}>Kiosk/Login Background</label>
                           <div className={`aspect-video rounded-2xl border-2 border-dashed ${borderColor} flex items-center justify-center relative overflow-hidden group cursor-pointer`} onClick={() => { setBrandingTarget('background'); brandingInputRef.current?.click(); }}>
                               {formData.loginScreen.backgroundImage ? (
-                                  <img src={formData.loginScreen.backgroundImage} className="w-full h-full object-cover" />
+                                  <img src={formData.loginScreen.backgroundImage} className="w-full h-full object-cover" alt="Kiosk Background" />
                               ) : (
                                   <Monitor className="w-8 h-8 opacity-20" />
                               )}
@@ -560,8 +561,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
                               <div>
                                   <label className={`block text-sm font-medium ${labelColor} mb-2`}>Sync Provider</label>
                                   <div className="flex flex-wrap gap-2">
-                                      <button type="button" onClick={() => setFormData({...formData, databaseSync: {...(formData.databaseSync as any), syncMode: 'firebase'}})} className={`flex-1 p-2 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${formData.databaseSync.syncMode === 'firebase' ? `border-orange-500 bg-orange-50 text-orange-700` : 'border-gray-200 opacity-60'}`}><Flame className="w-4 h-4" /> Firebase</button>
-                                      <button type="button" onClick={() => setFormData({...formData, databaseSync: {...(formData.databaseSync as any), syncMode: 'cloud'}})} className={`flex-1 p-2 rounded-lg border-2 transition-all ${formData.databaseSync.syncMode === 'cloud' ? `border-${themeColor}-600 bg-${themeColor}-50` : 'border-gray-200 opacity-60'}`}>REST API</button>
+                                      <button type="button" onClick={() => setFormData({...formData, databaseSync: {...(formData.databaseSync as any), syncMode: 'firebase'}})} className={`flex-1 p-2 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${formData.databaseSync?.syncMode === 'firebase' ? `border-orange-500 bg-orange-50 text-orange-700` : 'border-gray-200 opacity-60'}`}><Flame className="w-4 h-4" /> Firebase</button>
+                                      <button type="button" onClick={() => setFormData({...formData, databaseSync: {...(formData.databaseSync as any), syncMode: 'cloud'}})} className={`flex-1 p-2 rounded-lg border-2 transition-all ${formData.databaseSync?.syncMode === 'cloud' ? `border-${themeColor}-600 bg-${themeColor}-50` : 'border-gray-200 opacity-60'}`}>REST API</button>
                                   </div>
                               </div>
                               <SettingsInput label={t('terminalId')} value={formData.databaseSync.terminalId} onChange={(e: any) => setFormData({...formData, databaseSync: {...(formData.databaseSync as any), terminalId: e.target.value}})} styles={styleConfig} />
@@ -570,7 +571,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, currentUs
                                   <div className="md:col-span-2 p-4 bg-orange-50/50 border border-orange-100 rounded-xl space-y-4">
                                       <h4 className="text-orange-800 font-bold text-sm flex items-center gap-2"><Flame className="w-4 h-4" /> Firebase Firestore Settings</h4>
                                       <SettingsInput label="Firebase Project ID" value={formData.databaseSync.firebaseProjectId} onChange={(e: any) => setFormData({...formData, databaseSync: {...(formData.databaseSync as any), firebaseProjectId: e.target.value}})} styles={styleConfig} placeholder="your-project-id" />
-                                      <p className="text-[10px] text-orange-600 italic leading-tight">Note: Go to Firebase Console > Firestore > Rules and ensure "allow read, write: if true;" for testing. In production, secure your rules.</p>
+                                      <p className="text-[10px] text-orange-600 italic leading-tight">Note: Go to Firebase Console &gt; Firestore &gt; Rules and ensure "allow read, write: if true;" for testing. In production, secure your rules.</p>
                                   </div>
                               )}
                           </>
